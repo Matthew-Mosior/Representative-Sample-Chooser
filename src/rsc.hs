@@ -109,7 +109,7 @@ options =
     [ Option ['v']     ["verbose"]                 (NoArg Verbose)               "Output on stderr.",
       Option ['V','?'] ["version"]                 (NoArg Version)               "Show version number.",
       Option ['o']     ["outputfile"]              (ReqArg OutputFile "OUTFILE") "The output file to which the results will be printed.",
-      Option []        ["nonexhaustive"]           (NoArg NonExhaustive)         "First sample will be return for identifiers with\n\ 
+      Option []        ["nonexhaustive"]           (NoArg NonExhaustive)         "First sample will be returned for identifiers with\n\ 
                                                                                  \non-exhaustive hierarchical filtering values.",
       Option []        ["help"]                    (NoArg Help)                  "Print this help message."
     ]
@@ -157,7 +157,7 @@ compilerOpts argv =
             SIO.hPutStrLn stderr (DL.concat errors ++ SCG.usageInfo header Main.options)
             SX.exitWith (SX.ExitFailure 1)
         where
-            greeting        = "Representative Sample Chooser, Copyright (c) 2020 Matthew Mosior.\n"
+            greeting        = "\nRepresentative Sample Chooser, Copyright (c) 2020 Matthew Mosior.\n"
             header          = "Usage: rsc [-vV?o] [Identifier Field String] [Hierarchical Filter String] [TSV file]\n"
             version         = "Representative Sample Chooser (RSC), Version 1.0.\n"
             github          = "Please see https://github.com/Matthew-Mosior/Representative-Sample-Chooser/wiki for more information.\n"
@@ -221,9 +221,9 @@ hierarchicalCompletenessTest inputfile hierarchstr = do
     --Compare processedfile and hierarchstr.
     let hierarchicalfinaltest = hierarchicalCompletenessSmall transposedfile onlydefinitions
     --Test hierarchicalfinaltest.
-    if not (DL.null (DL.filter (\(_,b,c) -> (not (DL.null b) || DL.null c) ||
-                                            (DL.null b || not (DL.null c)) ||
-                                            (not (DL.null b) || not (DL.null c))) hierarchicalfinaltest))
+    if not (DL.null (DL.filter (\(_,b,c) -> (not (DL.null b) && DL.null c) ||
+                                            (DL.null b && not (DL.null c)) ||
+                                            (not (DL.null b) && not (DL.null c))) hierarchicalfinaltest))
         then return True
         else return False 
             where
@@ -457,7 +457,8 @@ complexTupleSnd (_,b) = b
 --file using the hierarchical filter string. 
 hierarchicalFiltering :: String -> String -> [[String]] -> [[String]] -> [Flag] -> [[String]]
 hierarchicalFiltering [] [] [] [] []    = []
-hierarchicalFiltering as bs cs ds flags = hierarchicalFilter identifierstrgroups fieldcomplete flags
+hierarchicalFiltering as bs cs ds flags = (DL.head cs) :
+                                          (hierarchicalFilter identifierstrgroups fieldcomplete flags)
     where
         --Local definitions.--
         --identifierstrgroups -> Lines of cs grouped by identifer string.
