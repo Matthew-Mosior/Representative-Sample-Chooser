@@ -90,29 +90,29 @@ This example will illustrate a scenario where a single record is returned (user-
 
 The hierarchical filtering starts on the most important field as described by the **Hierarchical Filter String**, **Time_point**.<br/><br/>
 
-|   | Sample_Group_ID| Time_point     | Type_of_data|Data_depth|
-|:-:|:--------------:|:--------------:|:-----------:|:--------:|
-|1  | 200ABC         | T1<br/>**tied**| simple      | 100.19   |
-|2  | 200ABC         | T1<br/>**tied**| complex     | 65.32    |          
-|3  | 200ABC         | T1<br/>**tied**| complex     | 106.78   |          
+|   | Sample_Group_ID| Time_point     | Type_of_data| Data_depth|
+|:-:|:--------------:|:--------------:|:-----------:|:---------:|
+|1  | 200ABC         | T1<br/>**tied**| simple      | 100.19    |
+|2  | 200ABC         | T1<br/>**tied**| complex     | 65.32     |          
+|3  | 200ABC         | T1<br/>**tied**| complex     | 106.78    |          
 
-There is a three way tie between all three lines due to the values in the **Time_point** field, so the filtering then moves onto the next most important field as described by the **Hierarchical Filter String**, **Type_of_data**.<br/><br/> 
+There is a three way tie between all three lines due to the values in the **Time_point** field, so the filtering then moves onto the next most important field as described by the **Hierarchical Filter String**, **Type_of_data**, and all three lines are still being compared.<br/><br/> 
 
-|   | Sample_Group_ID| Time_point     | Type_of_data        |Data_depth|
-|:-:|:--------------:|:--------------:|:-------------------:|:--------:|
-|1  | 200ABC         | T1<br/>**tied**| simple              | 100.19   |
-|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 65.32    |          
-|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 106.78   |
+|   | Sample_Group_ID| Time_point     | Type_of_data        | Data_depth|
+|:-:|:--------------:|:--------------:|:-------------------:|:---------:|
+|1  | 200ABC         | T1<br/>**tied**| simple              | 100.19    |
+|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 65.32     |          
+|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 106.78    |
 
-There is a two-way tie between lines 2 and 3 due to the values in the **Type_of_data** field, so the filtering then moves on to the next most important field as described by the **Hierarchical Filter String**, **Data_depth**.<br/><br/>
+There is a two-way tie between lines 2 and 3 due to the values in the **Type_of_data** field, so the filtering then moves on to the next most important field as described by the **Hierarchical Filter String**, **Data_depth**, and is restricted to just lines 2 and 3.<br/><br/>
 
-|   | Sample_Group_ID| Time_point     | Type_of_data        |Data_depth          |
-|:-:|:--------------:|:--------------:|:-------------------:|:------------------:|
-|1  | 200ABC         | T1<br/>**tied**| simple              | 100.19             | 
-|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 65.32              |          
-|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 106.78<br/>**wins**|
+|   | Sample_Group_ID| Time_point     | Type_of_data        | Data_depth          |
+|:-:|:--------------:|:--------------:|:-------------------:|:-------------------:|
+|1  | 200ABC         | T1<br/>**tied**| simple              | 100.19              | 
+|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 65.32               |          
+|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 106.78<br/>**wins** |
 
-Because the **Hierarchical Filter String** was defined as `FLOAT.>`, the largest float value in the field would win the comparison.<br/><br/>
+Because the **Hierarchical Filter String** was defined as `FLOAT.>`, the largest float value in the field would win the comparison between lines 2 and 3.<br/><br/>
 
 So **line 3** was the choosen record for this given identifier.<br/><br/>
 
@@ -120,6 +120,33 @@ So **line 3** was the choosen record for this given identifier.<br/><br/>
 
 This example will illustrate a scenario where no record is returned (user-defined hierarchical filter could not determine a best record for said identifier).<br/><br/>
 
+The hierarchical filtering starts on the most important field as described by the **Hierarchical Filter String**, **Time_point**.<br/><br/>
+
+|   | Sample_Group_ID| Time_point     | Type_of_data| Data_depth|
+|:-:|:--------------:|:--------------:|:-----------:|:---------:|
+|1  | 200ABC         | T1<br/>**tied**| complex     | 101.10    |
+|2  | 200ABC         | T1<br/>**tied**| complex     | 101.10    |          
+|3  | 200ABC         | T1<br/>**tied**| complex     | 101.10    |
+
+There is a three way tie between all three lines due to the values in the **Time_point** field, so the filtering then moves onto the next most important field as described by the **Hierarchical Filter String**, **Type_of_data**, and all three lines are still being compared.<br/><br/>
+
+|   | Sample_Group_ID| Time_point     | Type_of_data             | Data_depth|
+|:-:|:--------------:|:--------------:|:------------------------:|:---------:|
+|1  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**     | 101.10    |
+|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**     | 101.10    |          
+|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**     | 101.10    |
+
+There is a three way tie between all three lines due to the values in the **Type_of_data** field, so the filtering then moves onto the next most important field as described by the **Hierarchical Filter String**, **Data_depth**, and all three lines are still being compared.<br/><br/>
+
+|   | Sample_Group_ID| Time_point     | Type_of_data             | Data_depth            |
+|:-:|:--------------:|:--------------:|:------------------------:|:---------------------:|
+|1  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**     | 101.10<br/>**tied**   |
+|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**     | 101.10<br/>**tied**   |          
+|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**     | 101.10<br/>**tied**   |
+
+There is a three way tie between all three lines due to the values in the **Data_depth** field, so there is no **best** record for this identifier.<br/><br/>
+By default, in this scenario, no record will be returned for this identifier.<br/><br/>
+In this scenario, the `--nonexhaustive` option will grab the first record for this identifier and return it.<br/><br/>
 
 ## Docker
 
