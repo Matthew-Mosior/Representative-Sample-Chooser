@@ -5,7 +5,7 @@
 **Representative-Sample-Chooser (RSC)** is a computational tool for hierarchically filtering tab-delimited files.<br/>
 This haskell script takes in an identifier field string, a hierarchical filter string and a tsv file in order capture **best** record for each identifier.<br/><br/>
 
-**RSC** outputs a single, filtered tsv file on successful exit, or an error message/log depending on the issue (more on this to come).<br/>
+**RSC** outputs a single, filtered tsv file on successful exit, or an error message/log depending on the issue (more on this later).<br/>
 
 ## Prerequisites
 
@@ -75,6 +75,11 @@ The `--nonexhaustive` option specifies to print the first record for all given i
 Finally, the `--help` option outputs the `help` message seen above.<br/><br/>
 
 ## Some Examples
+
+**Example 1**: This example will illustrate a scenario where a single record is returned (user-defined hierarchical filter determined it was the best record for said identifier).<br/><br/>
+
+**Example 2**: This example will illustrate a scenario where no record is returned (user-defined hierarchical filter could not determine a best record for said identifier).<br/><br/>
+
 
 ## Docker
 
