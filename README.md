@@ -76,9 +76,49 @@ Finally, the `--help` option outputs the `help` message seen above.<br/><br/>
 
 ## Some Examples
 
-**Example 1**: This example will illustrate a scenario where a single record is returned (user-defined hierarchical filter determined it was the best record for said identifier).<br/><br/>
+The following examples will help illustrate the way the hierarchical filtering algorithm chooses a **best** record for each given identifier.<br/><br/>
 
-**Example 2**: This example will illustrate a scenario where no record is returned (user-defined hierarchical filter could not determine a best record for said identifier).<br/><br/>
+The following two examples assume the following inputs:<br/><br/> 
+**Identifier Field String**: `;Sample_Group_ID;`<br/>
+**Hierarchical Filter String**: `;Time_point:T1>=T2>=T3;Type_of_data:complex>=simple>=NA;Data_depth:FLOAT.>;`<br/><br/>
+
+Each of the following examples are illustrating the hierarchical filtering on a **single** identifier for simplicity sake.<br/><br/>
+
+### Example 1: 
+
+This example will illustrate a scenario where a single record is returned (user-defined hierarchical filter determined it was the best record for said identifier).<br/><br/>
+
+The hierarchical filtering starts on the most important field as described by the **Hierarchical Filter String**, **Time_point**.<br/><br/>
+
+|   | Sample_Group_ID| Time_point     | Type_of_data|Data_depth|
+|:-:|:--------------:|:--------------:|:-----------:|:--------:|
+|1  | 200ABC         | T1<br/>**tied**| simple      | 100.19   |
+|2  | 200ABC         | T1<br/>**tied**| complex     | 65.32    |          
+|3  | 200ABC         | T1<br/>**tied**| complex     | 106.78   |          
+
+There is a three way tie between all three lines due to the values in the **Time_point** field, so the filtering then moves onto the next most important field as described by the **Hierarchical Filter String**, **Type_of_data**.<br/><br/> 
+
+|   | Sample_Group_ID| Time_point     | Type_of_data        |Data_depth|
+|:-:|:--------------:|:--------------:|:-------------------:|:--------:|
+|1  | 200ABC         | T1<br/>**tied**| simple              | 100.19   |
+|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 65.32    |          
+|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 106.78   |
+
+There is a two-way tie between lines 2 and 3 due to the values in the **Type_of_data** field, so the filtering then moves on to the next most important field as described by the **Hierarchical Filter String**, **Data_depth**.<br/><br/>
+
+|   | Sample_Group_ID| Time_point     | Type_of_data        |Data_depth          |
+|:-:|:--------------:|:--------------:|:-------------------:|:------------------:|
+|1  | 200ABC         | T1<br/>**tied**| simple              | 100.19             | 
+|2  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 65.32              |          
+|3  | 200ABC         | T1<br/>**tied**| complex<br/>**tied**| 106.78<br/>**wins**|
+
+Because the **Hierarchical Filter String** was defined as `FLOAT.>`, the largest float value in the field would win the comparison.<br/><br/>
+
+So **line 3** was the choosen record for this given identifier.<br/><br/>
+
+### Example 2:
+
+This example will illustrate a scenario where no record is returned (user-defined hierarchical filter could not determine a best record for said identifier).<br/><br/>
 
 
 ## Docker
