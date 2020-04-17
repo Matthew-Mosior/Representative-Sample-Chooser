@@ -457,7 +457,7 @@ complexTupleSnd (_,b) = b
 --file using the hierarchical filter string. 
 hierarchicalFiltering :: String -> String -> [[String]] -> [[String]] -> [Flag] -> [[String]]
 hierarchicalFiltering [] [] [] [] []    = []
-hierarchicalFiltering as bs cs ds flags = (DL.head cs) :
+hierarchicalFiltering as bs cs ds flags = (DL.head cs) : 
                                           (hierarchicalFilter identifierstrgroups fieldcomplete flags)
     where
         --Local definitions.--
@@ -500,7 +500,7 @@ fieldComparator [] [] []    = []
 fieldComparator xs ys flags = --If all possible comparison fields had duplicate values,
                               --check for nonExhaustive flag.
                               --take first record using finalcomparisonlist.
-                              if (DL.null (customComparator finalcomparisonlist ys xs))
+                              if (DL.null (customComparator finalcomparisonlist ys xs [-1]))
                                   then if (DL.length (DL.filter (isNonExhaustive) flags) > 0)
                                       --Take best possible record for current identifier.
                                       then nonExhaustiveIdentifier xs
@@ -512,8 +512,8 @@ fieldComparator xs ys flags = --If all possible comparison fields had duplicate 
                                       else []
                                   --If customComparator finds best record for current
                                   --identifier, return it.
-                                  else if (not (DL.null (customComparator finalcomparisonlist ys xs)))
-                                      then customComparator finalcomparisonlist ys xs 
+                                  else if (not (DL.null (customComparator finalcomparisonlist ys xs [-1])))
+                                      then customComparator finalcomparisonlist ys xs [-1] 
                                       --Else, return nothing.
                                       else [] 
     where
@@ -539,154 +539,643 @@ fieldComparator xs ys flags = --If all possible comparison fields had duplicate 
 --compare values from each group of
 --applicable records per identifier
 --and decide the best record to choose.
-customComparator :: [(Int,[([(Int,Int,String,String)],Int)])] -> [(Int,String,[String])] -> [[String]] -> [[String]] 
-customComparator []     []    []    = []
-customComparator []     []    (_:_) = []
-customComparator []     (_:_) _     = []
-customComparator (x:xs) ys    zs    = if --If the first element of this list is singular (wins comparison),
-                                         --and its second element of the second element IS NOT a -1
-                                         --(FLOAT or INT), then it wins.
-                                         | (((DL.head (DL.map (DL.length) 
-                                           (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h) 
-                                           (DL.sortOn (\(_,b,_,_) -> b) 
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) && 
-                                           (-1 `DL.notElem` 
-                                           (DL.concat 
-                                           ((DL.map ((DL.map (\(_,b,_,_) -> b))) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) ->
-                                           [zs DL.!! 
-                                           (quadrupletFst (DL.head (DL.sortOn (\(_,b,_,_) -> b) 
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))]
-                                         --If the first element of this list is singular (wins comparison),
-                                         --and its second element of the second element IS a -1
-                                         --(FLOAT or INT), then compare using proper comparator in ys.
-                                         --If user-supplied operator is <,
-                                         --and the comparison is of FLOAT,
-                                         --and there are no duplicated comparison elements.        
-                                         | (((DL.head (DL.map (DL.length) 
-                                           (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h) 
-                                           (DL.sortOn (\(_,b,_,_) -> b) 
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
-                                           (-1 `DL.elem` 
-                                           (DL.concat 
-                                           ((DL.map ((DL.map (\(_,b,_,_) -> b))) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))     &&
-                                           (("<" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
-                                           ("FLOAT" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) && 
-                                           ((DL.length 
-                                           (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
-                                           (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
-                                           --Grab the line that contains the minimum comparison element.
-                                           [zs DL.!! 
-                                           (quadrupletFst (DL.minimumBy (\(_,_,_,d) (_,_,_,h) -> compare 
-                                           (read d :: Float) (read h :: Float)) 
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
-                                         --If the first element of this list is singular (wins comparison),
-                                         --and its second element of the second element IS a -1
-                                         --(FLOAT or INT), then compare using proper comparator in ys.
-                                         --If user-supplied operator is <,
-                                         --and the comparison is of INT,
-                                         --and there are no duplicated comparison elements.
-                                         | (((DL.head (DL.map (DL.length)
-                                           (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
-                                           (DL.sortOn (\(_,b,_,_) -> b)
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
-                                           (-1 `DL.elem`
-                                           (DL.concat
-                                           ((DL.map ((DL.map (\(_,b,_,_) -> b)))
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))     &&
-                                           (("<" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
-                                           ("INT" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
-                                           ((DL.length 
-                                           (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
-                                           (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
-                                           --Grab the line that contains the minimum comparison element.
-                                           [zs DL.!! 
-                                           (quadrupletFst (DL.minimumBy (\(_,_,_,d) (_,_,_,h) -> compare 
-                                           (read d :: Int) (read h :: Int)) 
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
-                                         --If the first element of this list is singular (wins comparison),
-                                         --and its second element of the second element IS a -1
-                                         --(FLOAT or INT), then compare using proper comparator in ys.
-                                         --If user-supplied operator is >,
-                                         --and the comparison is of FLOAT,
-                                         --and there are no duplicated comparison elements.
-                                         | (((DL.head (DL.map (DL.length)
-                                           (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
-                                           (DL.sortOn (\(_,b,_,_) -> b)
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
-                                           (-1 `DL.elem`
-                                           (DL.concat
-                                           ((DL.map ((DL.map (\(_,b,_,_) -> b)))
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))     &&  
-                                           ((">" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
-                                           ("FLOAT" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
-                                           ((DL.length 
-                                           (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
-                                           (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
-                                           --Grab the line that contains the maximum comparison element.
-                                           [zs DL.!! 
-                                           (quadrupletFst (DL.maximumBy (\(_,_,_,d) (_,_,_,h) -> compare 
-                                           (read d :: Float) (read h :: Float)) 
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
-                                         --If the first element of this list is singular (wins comparison),
-                                         --and its second element of the second element IS a -1
-                                         --(FLOAT or INT), then compare using proper comparator in ys.
-                                         --If user-supplied operator is >,
-                                         --and the comparison is of INT,
-                                         --and there are no duplicated comparison elements.
-                                         | (((DL.head (DL.map (DL.length)
-                                           (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
-                                           (DL.sortOn (\(_,b,_,_) -> b)
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
-                                           (-1 `DL.elem`
-                                           (DL.concat
-                                           ((DL.map ((DL.map (\(_,b,_,_) -> b)))
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))     &&
-                                           ((">" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
-                                           ("INT" `DL.elem` 
-                                           (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
-                                           (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
-                                           ((DL.length (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
-                                           (DL.length 
-                                           (DL.concat (DL.map (DL.map (quadrupletFrh)) 
-                                           (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
-                                           --Grab the line that contains the maximum comparison element.
-                                           [zs DL.!! 
-                                           (quadrupletFst (DL.maximumBy (\(_,_,_,d) (_,_,_,h) -> compare 
-                                           (read d :: Int) (read h :: Int)) 
-                                           (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
-                                         --Recurse.
-                                         | otherwise -> customComparator xs ys zs 
+customComparator :: [(Int,[([(Int,Int,String,String)],Int)])] -> [(Int,String,[String])] -> [[String]] -> [Int] -> [[String]] 
+customComparator []     [] [] []          = []
+customComparator (x:xs) ys zs bestindices = if --If the first element of this list IS singular (wins comparison),
+                                               --and its second element of the second element IS NOT a -1
+                                               --(FLOAT or INT), then it wins.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length) 
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h) 
+                                                 (DL.sortOn (\(_,b,_,_) -> b) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) && 
+                                                 (-1 `DL.notElem` 
+                                                 (DL.concat 
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b))) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) ->
+                                                 --Grab the best record.
+                                                 [zs DL.!! 
+                                                 (quadrupletFst (DL.head (DL.sortOn (\(_,b,_,_) -> b) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))]
+                                               --If the first element of this list IS singular (wins comparison),
+                                               --and its second element of the second element IS a -1
+                                               --(FLOAT or INT), then compare using proper comparator in ys.
+                                               --If user-supplied operator is <,
+                                               --and the comparison is of FLOAT,
+                                               --and there are no duplicated comparison elements.        
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length) 
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h) 
+                                                 (DL.sortOn (\(_,b,_,_) -> b) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
+                                                 (-1 `DL.elem` 
+                                                 (DL.concat 
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b))) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) && 
+                                                 ((DL.length 
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the minimum comparison element.
+                                                 [zs DL.!! 
+                                                 (quadrupletFst (DL.minimumBy (\(_,_,_,d) (_,_,_,h) -> compare 
+                                                 (read d :: Float) (read h :: Float)) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
+                                               --If the first element of this list IS singular (wins comparison),
+                                               --and its second element of the second element IS a -1
+                                               --(FLOAT or INT), then compare using proper comparator in ys.
+                                               --If user-supplied operator is <,
+                                               --and the comparison is of INT,
+                                               --and there are no duplicated comparison elements.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length 
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the minimum comparison element.
+                                                 [zs DL.!! 
+                                                 (quadrupletFst (DL.minimumBy (\(_,_,_,d) (_,_,_,h) -> compare 
+                                                 (read d :: Int) (read h :: Int)) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
+                                               --If the first element of this list IS singular (wins comparison),
+                                               --and its second element of the second element IS a -1
+                                               --(FLOAT or INT), then compare using proper comparator in ys.
+                                               --If user-supplied operator is >,
+                                               --and the comparison is of FLOAT,
+                                               --and there are no duplicated comparison elements.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&  
+                                                 ((">" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length 
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the maximum comparison element.
+                                                 [zs DL.!! 
+                                                 (quadrupletFst (DL.maximumBy (\(_,_,_,d) (_,_,_,h) -> compare 
+                                                 (read d :: Float) (read h :: Float)) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
+                                               --If the first element of this list IS singular (wins comparison),
+                                               --and its second element of the second element IS a -1
+                                               --(FLOAT or INT), then compare using proper comparator in ys.
+                                               --If user-supplied operator is >,
+                                               --and the comparison is of INT,
+                                               --and there are no duplicated comparison elements.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) == 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 ((">" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem` 
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) -> 
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) == 
+                                                 (DL.length 
+                                                 (DL.concat (DL.map (DL.map (quadrupletFrh)) 
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the maximum comparison element.
+                                                 [zs DL.!! 
+                                                 (quadrupletFst (DL.maximumBy (\(_,_,_,d) (_,_,_,h) -> compare 
+                                                 (read d :: Int) (read h :: Int)) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))]
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --and the second element of the second element IS NOT a -1,
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) /= 1) &&
+                                                 (-1 `DL.notElem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst) 
+                                                 (DL.head
+                                                 (DL.groupBy (\(_,b,_,_) (_,f,_,_) -> b == f) 
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))))
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst) 
+                                                 (DL.head 
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h) 
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Float)) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) 
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.head
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Int)) 
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))))
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 ((">" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.last
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Float))
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))))
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.elem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 ((">" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.last
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Int))
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))))
+                                               --If the first element of this list IS singular (tie),
+                                               --based on bestindices,
+                                               --and the second element of the second element IS NOT a -1,
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) == 1) &&
+                                                 (-1 `DL.notElem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) ->
+                                                 --Grab the best record.
+                                                 [zs DL.!!
+                                                 (quadrupletFst (DL.head (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))]
+                                               --If the first element of this list IS singular,
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) == 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the minimum comparison element.
+                                                 [zs DL.!!
+                                                 (quadrupletFst (DL.minimumBy (\(_,_,_,d) (_,_,_,h) -> compare
+                                                 (read d :: Float) (read h :: Float))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))]
+                                               --If the first element of this list IS singular,
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) == 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the minimum comparison element.
+                                                 [zs DL.!!
+                                                 (quadrupletFst (DL.minimumBy (\(_,_,_,d) (_,_,_,h) -> compare
+                                                 (read d :: Int) (read h :: Int))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))]
+                                               --If the first element of this list IS singular,
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) == 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 ((">" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the maximum comparison element.
+                                                 [zs DL.!!
+                                                 (quadrupletFst (DL.maximumBy (\(_,_,_,d) (_,_,_,h) -> compare
+                                                 (read d :: Float) (read h :: Float))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))]
+                                               --If the first element of this list IS singular,
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) == 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 ((">" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Grab the line that contains the maximum comparison element.
+                                                 [zs DL.!!
+                                                 (quadrupletFst (DL.maximumBy (\(_,_,_,d) (_,_,_,h) -> compare
+                                                 (read d :: Int) (read h :: Int))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))]
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --based on bestindices,
+                                               --and the second element of the second element IS NOT a -1,
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) /= 1) &&
+                                                 (-1 `DL.notElem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.head
+                                                 (DL.groupBy (\(_,b,_,_) (_,f,_,_) -> b == f)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))))
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.head
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Float))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))))
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 (("<" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.head
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Int))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))))
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 ((">" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("FLOAT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.last
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Float))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))))
+                                               --If the first element of this list IS NOT singular (tie),
+                                               --based on bestindices,
+                                               --and the second element of the second element IS a -1
+                                               --grab the indices of records within this identifier that
+                                               --contain the highest possible hierarchical comparison values.
+                                               | ((-1 `DL.notElem` bestindices) &&
+                                                 ((DL.head (DL.map (DL.length)
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,b,_,_) -> b)
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) /= 1) &&
+                                                 (-1 `DL.elem`
+                                                 (DL.concat
+                                                 ((DL.map ((DL.map (\(_,b,_,_) -> b)))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) &&
+                                                 ((">" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ("INT" `DL.elem`
+                                                 (tripletThd (singleunnest (DL.filter (\(_,b,_) ->
+                                                 (DL.concat (DL.head (DL.map (DL.map (quadrupletThd))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x))))) == b) ys)))) &&
+                                                 ((DL.length
+                                                 (DL.nub (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))) ==
+                                                 (DL.length (DL.concat (DL.map (DL.map (quadrupletFrh))
+                                                 (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))) ->
+                                                 --Update bestindices with the indices of the best current records,
+                                                 --and recurse.
+                                                 customComparator xs ys zs
+                                                 ((DL.map (quadrupletFst)
+                                                 (DL.last
+                                                 (DL.groupBy (\(_,_,_,d) (_,_,_,h) -> d == h)
+                                                 (DL.sortOn (\(_,_,_,d) -> (read d :: Int))
+                                                 (DL.filter (\(a,_,_,_) -> a `DL.elem` bestindices)
+                                                 (DL.concat (DL.map (complexTupleFst) (complexComplexTupleSnd x)))))))))  
+                                               --Recurse.
+                                               | otherwise -> customComparator xs ys zs bestindices
 
 --nonExhaustiveIdentifier -> This function will
 --hold all of the identifiers in which there
