@@ -41,7 +41,13 @@ To install the peripheral packages **rsc.hs** requires, you can call the followi
 
 1. **Identifier Field String** - This string will define the field (column) on which the data compression occurs.<br/>
 
-2. **Hierarchical Filter String** - This string will define a hierarchy of fields upon which to filter on.  Within each field, a hierarchy of values will define the way in which filtering will occur (see example below).<br/>
+2. **Hierarchical Filter String** - This string will define a hierarchy of fields upon which to filter on.  Within each field, a hierarchy of values will define the way in which filtering will occur (see example below).<br/><br/>
+
+The **Hierarchical Filter String** has the following structure:<br/>
+`;[FIELDNAME1]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];[FIELDNAME2]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];`<br/><br/>
+
+If the user has not specified all possible values for a given field, the program will exit early, and print a file named `rsc_ERROR.log`, detailing all field(s) with missing values, and what those missing values are:<br/>
+`Name_of_Field_(Column) Values_Found_in_Input_TSV_Not_Found_in_Hierarchical_Filter_String Values_Found_in_Hierarchical_Filter_String_Not_Found_in_Input_TSV`<br/><br/>
 
 3. **TSV file** - This is tab-delimited file on which the hierarchical filtering will occur.<br/>
 
