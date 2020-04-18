@@ -49,6 +49,14 @@ The **Identifier Field String** has the following structure:<br/>
 The **Hierarchical Filter String** has the following structure:<br/>
 `;[FIELDNAME1]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];[FIELDNAME2]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];`<br/><br/>
 
+The following keywords can be used to identify fields which are numeric in nature (float or int):<br/>
+- Float -> **FLOAT**
+- Int   -> **INT**<br/><br/>
+
+The following keycharacters can be used with the above keywords to define the **type** of comparison:<br/>
+- Maximum -> **>**
+- Minimum -> **<**<br/><br/>
+
 If the user has not specified all possible values for a given field, the program will exit early, and print a file named `rsc_ERROR.log`, detailing all field(s) with missing values, and what those missing values are:<br/>
 `Name_of_Field_(Column) Values_Found_in_Input_TSV_Not_Found_in_Hierarchical_Filter_String Values_Found_in_Hierarchical_Filter_String_Not_Found_in_Input_TSV`<br/><br/>
 
