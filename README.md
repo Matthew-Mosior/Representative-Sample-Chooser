@@ -49,6 +49,8 @@ The **Identifier Field String** has the following structure:<br/>
 The **Hierarchical Filter String** has the following structure:<br/>
 `;[FIELDNAME1]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];[FIELDNAME2]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];`<br/><br/>
 
+The order in which the user provides the field names and corresponding field values is **important**, the first field name specified will be the first field used for comparison, and so on.<br/><br/>
+
 The following keywords can be used to identify fields which are numeric in nature (float or int):<br/>
 - Float -> **FLOAT**
 - Int   -> **INT**<br/><br/>
