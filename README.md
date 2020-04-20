@@ -101,7 +101,7 @@ The following two examples assume the following inputs:<br/><br/>
 **Identifier Field String**: `;Sample_Group_ID;`<br/>
 **Hierarchical Filter String**: `;Time_point:T1>=T2>=T3;Type_of_data:complex>=simple>=NA;Data_depth:FLOAT.>;`<br/><br/>
 
-Each of the following examples are illustrating the hierarchical filtering on a **single** identifier for simplicity sake.<br/><br/>
+Each of the following examples are illustrating the hierarchical filtering on a **single** identifier for simplicity's sake.<br/><br/>
 
 ### Example 1: 
 
