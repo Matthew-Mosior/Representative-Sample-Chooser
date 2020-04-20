@@ -39,12 +39,12 @@ To install the peripheral packages **rsc.hs** requires, you can call the followi
 
 **RSC** requires three inputs:<br/><br/>
 
-1. **Identifier Field String** - This string will define the field (column) on which the data compression occurs.<br/><br/>
+1. **Identifier Field String** - This string defines the field (column) on which the data compression occurs.<br/><br/>
 
 The **Identifier Field String** has the following structure:<br/>
 `;[Identifier Field String];`<br/><br/>
 
-2. **Hierarchical Filter String** - This string will define a hierarchy of fields upon which to filter on.  Within each field, a hierarchy of values will define the way in which filtering will occur (see example below).<br/><br/>
+2. **Hierarchical Filter String** - This string defines a hierarchy of fields upon which to filter on.  Within each field, a hierarchy of values will define the way in which filtering will occur (see example below).<br/><br/>
 
 The **Hierarchical Filter String** has the following structure:<br/>
 `;[FIELDNAME1]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];[FIELDNAME2]:[FIELDVALUE1]>=[FIELDVALUE2]>=...>=[FIELDVALUEN];`<br/><br/>
