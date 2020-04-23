@@ -166,6 +166,7 @@ There is a three way tie between all three lines due to the values in the **Type
 There is a three way tie between all three lines due to the values in the **Data_depth** field, so there is no **best** record for this identifier.<br/><br/>
 By default, in this scenario, no record will be returned for this identifier.<br/><br/>
 In this scenario, the `--nonexhaustive` option (**optional**) will grab the first record for this identifier and return it.<br/><br/>
+The user could also provide an additional field and corresponding values in the hierarchical filter string.<br/><br/>
 
 ## Docker
 
