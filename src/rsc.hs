@@ -30,6 +30,7 @@ import Data.Functor as DF
 import Data.List as DL
 import Data.List.Split as DLS
 import Data.Ord as DO
+import Data.Text as DT
 import System.Console.GetOpt as SCG
 import System.Process as SP
 import System.Environment as SE
@@ -462,7 +463,7 @@ hierarchicalFiltering as bs cs ds flags = (DL.head cs) :
     where
         --Local definitions.--
         --identifierstrgroups -> Lines of cs grouped by identifer string.
-        identifierstrgroups = DL.groupBy (\x y -> (DL.head x) == (DL.head y)) (DL.tail cs)
+        identifierstrgroups = DL.groupBy (\x y -> (DL.head x) == (DL.head y)) (DL.sort (DL.map (DL.map (\x -> DT.unpack (DT.strip (DT.pack x)))) (DL.tail cs)))
         --fieldcomplete -> To hold both the fieldheaderindices, fieldheaders and fielddata.
         fieldcomplete = DL.map (\((x,y),z) -> (x,y,z)) (DL.zip sortedfieldheaderindices (DL.map (snd) alldata)) 
         --sortedfieldheaderindices -> To order fieldheaderindices using alldata.
